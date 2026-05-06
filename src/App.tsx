@@ -360,6 +360,14 @@ const LessonView = ({ lesson, onComplete, onCancel, settings }: { lesson: Lesson
   );
 };
 
+const MOCK_LEADERS = [
+  { id: 'm1', name: 'Alunsina', points: 1250, streak: 15 },
+  { id: 'm2', name: 'Bathala', points: 1100, streak: 12 },
+  { id: 'm3', name: 'Tala', points: 950, streak: 8 },
+  { id: 'm4', name: 'Mayari', points: 800, streak: 5 },
+  { id: 'm5', name: 'Apo', points: 600, streak: 3 },
+];
+
 const Leaderboard = ({ settings }: { settings: any }) => {
   const t = getTranslation(settings.language as Language);
   const [leaders, setLeaders] = useState<any[]>([]);
@@ -368,11 +376,22 @@ const Leaderboard = ({ settings }: { settings: any }) => {
   useEffect(() => {
     const q = query(collection(db, 'users'), orderBy('points', 'desc'), limit(10));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const usersData = snapshot.docs.map(doc => ({
+      const liveUsers = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...(doc.data() as any)
       }));
-      setLeaders(usersData);
+
+      // Merge mock data with live data, remove duplicates if name matches (simple case)
+      const combined = [...liveUsers];
+      MOCK_LEADERS.forEach(mock => {
+        if (!combined.some(u => u.name === mock.name)) {
+          combined.push(mock);
+        }
+      });
+
+      // Sort and take top 10
+      const sorted = combined.sort((a, b) => b.points - a.points).slice(0, 10);
+      setLeaders(sorted);
       setLoading(false);
     }, (error) => {
       console.error("Leaderboard Error:", error);
