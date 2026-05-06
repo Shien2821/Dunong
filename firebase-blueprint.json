@@ -1,0 +1,24 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User progress and profile data for the leaderboard",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Display name of the user" },
+        "points": { "type": "integer", "description": "Total XP earned" },
+        "streak": { "type": "integer", "description": "Current day streak" },
+        "avatar": { "type": "string", "description": "Base64 or URL of the profile photo" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last time the profile was updated" },
+        "completedLessons": { "type": "array", "items": { "type": "string" }, "description": "List of lesson IDs completed" }
+      },
+      "required": ["name", "points", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Public profiles and progress for all users"
+    }
+  }
+}

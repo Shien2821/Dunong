@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BookOpen, 
@@ -16,8 +16,32 @@ import {
   Camera,
   LogOut
 } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  onAuthStateChanged, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut,
+  signInAnonymously,
+  updateProfile
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  onSnapshot, 
+  collection, 
+  query, 
+  orderBy, 
+  limit,
+  serverTimestamp,
+  Timestamp
+} from 'firebase/firestore';
 import { REFINED_BAYBAYIN, LESSONS, Lesson, BaybayinChar, COMMUNITY_NOTES } from './constants';
 import { TRANSLATIONS, Language, getTranslation } from './translations';
+import { db, auth, googleProvider } from './lib/firebase';
 
 // --- Constants ---
 
@@ -38,7 +62,7 @@ interface Note {
 
 // --- Components ---
 
-const GameNavigation = ({ activeTab, setActiveTab, progress, settings }: { activeTab: string, setActiveTab: (t: string) => void, progress: UserProgress, settings: any }) => {
+const GameNavigation = ({ activeTab, setActiveTab, progress, settings, user }: { activeTab: string, setActiveTab: (t: string) => void, progress: UserProgress, settings: any, user: any }) => {
   const t = getTranslation(settings.language as Language);
 
   const leftTabs = [
@@ -70,7 +94,13 @@ const GameNavigation = ({ activeTab, setActiveTab, progress, settings }: { activ
                 : 'bg-white border-parchment text-gray-400'
             }`}
           >
-            <span className="text-xl">{tab.icon}</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+              {tab.id === 'profile' && user?.avatar ? (
+                <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xl">{tab.icon}</span>
+              )}
+            </div>
             {tab.id === 'profile' && (
               <div className="absolute -bottom-1 bg-primary-brand text-[7px] text-white px-1.5 rounded-full font-black uppercase shadow-sm">
                 Lvl {Math.floor(progress.points / 100) + 1}
@@ -94,10 +124,14 @@ const GameNavigation = ({ activeTab, setActiveTab, progress, settings }: { activ
               activeTab === tab.id ? 'text-primary-brand' : 'text-gray-400'
             }`}
           >
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all overflow-hidden ${
               activeTab === tab.id ? 'bg-primary-brand text-white shadow-lg' : 'bg-parchment/10 group-hover:bg-parchment/30'
             }`}>
-              <span className="text-xl">{tab.icon}</span>
+              {tab.id === 'profile' && user?.avatar ? (
+                <img src={user.avatar} alt="Avatar" className="w-full h-full border-2 border-white/20 rounded-xl object-cover" />
+              ) : (
+                <span className="text-xl">{tab.icon}</span>
+              )}
             </div>
             <span className="text-[9px] font-black uppercase tracking-tight">{tab.label}</span>
           </motion.button>
@@ -328,41 +362,67 @@ const LessonView = ({ lesson, onComplete, onCancel, settings }: { lesson: Lesson
 
 const Leaderboard = ({ settings }: { settings: any }) => {
   const t = getTranslation(settings.language as Language);
-  const mockUsers = [
-    { name: 'Shien', points: 1250, streak: 12 },
-    { name: 'Sof', points: 1100, streak: 8 },
-    { name: 'Samaire', points: 950, streak: 5 },
-    { name: 'Mhevly', points: 800, streak: 3 },
-    
-  ];
+  const [leaders, setLeaders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, 'users'), orderBy('points', 'desc'), limit(10));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const usersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setLeaders(usersData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Leaderboard Error:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="space-y-6">
       <h2 className="text-4xl font-black uppercase text-primary-dark px-2">{t.leaderboard}</h2>
-      <div className="vibrant-card p-0 overflow-hidden shadow-sm">
-        {mockUsers.map((user, i) => (
-          <div key={user.name} className={`flex items-center justify-between p-4 border-b border-parchment/30 last:border-0 ${i === 0 ? 'bg-accent-gold/5' : ''}`}>
-            <div className="flex items-center gap-4">
-              <span className={`text-2xl font-black w-6 text-center ${i < 3 ? 'text-accent-gold' : 'text-gray-300'}`}>
-                {i + 1}
-              </span>
-              <div className="w-10 h-10 rounded-full bg-parchment/40 flex items-center justify-center font-black text-primary-brand text-xs">
-                {user.name.charAt(0)}
-              </div>
-              <div>
-                <p className="text-lg font-black text-primary-dark uppercase tracking-tight leading-none">{user.name}</p>
-                <div className="flex gap-2 mt-1">
-                   <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🔥 {user.streak} {settings.language === 'fil' ? 'ARW' : 'DAY'}</span>
+      
+      {loading ? (
+        <div className="vibrant-card p-12 text-center">
+          <div className="w-10 h-10 border-4 border-accent-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-primary-dark font-serif italic">Kinukuha ang mga bayani...</p>
+        </div>
+      ) : (
+        <div className="vibrant-card p-0 overflow-hidden shadow-sm">
+          {leaders.map((user, i) => (
+            <div key={user.id} className={`flex items-center justify-between p-4 border-b border-parchment/30 last:border-0 ${i === 0 ? 'bg-accent-gold/5' : ''}`}>
+              <div className="flex items-center gap-4">
+                <span className={`text-2xl font-black w-6 text-center ${i < 3 ? 'text-accent-gold' : 'text-gray-300'}`}>
+                  {i + 1}
+                </span>
+                <div className="w-10 h-10 rounded-full bg-parchment/40 flex items-center justify-center font-black text-primary-brand text-xs overflow-hidden">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    user.name?.charAt(0) || '👤'
+                  )}
+                </div>
+                <div>
+                  <p className="text-lg font-black text-primary-dark uppercase tracking-tight leading-none">{user.name}</p>
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">
+                      🔥 {user.streak || 1} {settings.language === 'fil' ? 'ARW' : 'DAY'}
+                    </span>
+                  </div>
                 </div>
               </div>
+              <div className="text-right">
+                <p className="text-xl font-black text-primary-brand leading-none">{user.points}</p>
+                <p className="text-[9px] font-black uppercase text-gray-400 mt-1">{t.score}</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-xl font-black text-primary-brand leading-none">{user.points}</p>
-              <p className="text-[9px] font-black uppercase text-gray-400 mt-1">{t.score}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -461,9 +521,23 @@ const IntroView = ({ onStart, settings }: { onStart: () => void, settings: any }
   );
 };
 
-const AuthView = ({ onComplete, settings }: { onComplete: (name: string) => void, settings: any }) => {
+const AuthView = ({ onComplete, settings }: { onComplete: (name: string, isGoogle?: boolean) => void, settings: any }) => {
   const t = getTranslation(settings.language as Language);
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      onComplete(result.user.displayName || 'Isko', true);
+    } catch (error) {
+      console.error("Google Login Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-paper-bg flex flex-col items-center justify-center p-8 z-[90]">
       <div className="max-w-md w-full space-y-8">
@@ -484,15 +558,32 @@ const AuthView = ({ onComplete, settings }: { onComplete: (name: string) => void
             />
           </div>
           
-          <button 
-            disabled={!name}
-            onClick={() => {
-              onComplete(name);
-            }}
-            className="w-full vibrant-button py-4 text-xl"
-          >
-            {t.getStarted}
-          </button>
+          <div className="space-y-3">
+            <button 
+              disabled={!name || loading}
+              onClick={() => {
+                onComplete(name);
+              }}
+              className="w-full vibrant-button py-4 text-xl"
+            >
+              {t.getStarted}
+            </button>
+
+            <div className="flex items-center gap-4 my-2">
+              <div className="h-px flex-1 bg-parchment"></div>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">o</span>
+              <div className="h-px flex-1 bg-parchment"></div>
+            </div>
+
+            <button 
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 py-4 border-2 border-parchment rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-parchment/10 transition-all"
+            >
+              <Mail className="w-4 h-4 text-red-500" />
+              Sign in with Google
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -502,7 +593,9 @@ const AuthView = ({ onComplete, settings }: { onComplete: (name: string) => void
 const SettingsView = ({ settings, setSettings, setShowIntro, user, onUpdateProfile }: { settings: any, setSettings: any, setShowIntro: (s: boolean) => void, user: any, onUpdateProfile: (u: any) => void }) => {
   const t = getTranslation(settings.language as Language);
   const [editingName, setEditingName] = useState(user?.name || '');
+  const [avatar, setAvatar] = useState(user?.avatar || null);
   const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const languages = [
     { id: 'fil', label: 'Filipino', flag: '🇵🇭' },
@@ -512,9 +605,20 @@ const SettingsView = ({ settings, setSettings, setShowIntro, user, onUpdateProfi
   const handleProfileUpdate = () => {
     setIsSaving(true);
     setTimeout(() => {
-      onUpdateProfile({ ...user, name: editingName });
+      onUpdateProfile({ ...user, name: editingName, avatar });
       setIsSaving(false);
     }, 500);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatar(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -528,12 +632,26 @@ const SettingsView = ({ settings, setSettings, setShowIntro, user, onUpdateProfi
           <div className="vibrant-card space-y-6">
             <div className="flex items-center gap-4">
               <div className="relative group">
-                <div className="w-16 h-16 rounded-2xl bg-parchment flex items-center justify-center text-2xl">
-                  {user?.name?.charAt(0) || '👤'}
+                <div className="w-16 h-16 rounded-2xl bg-parchment flex items-center justify-center text-2xl overflow-hidden border-2 border-white shadow-md">
+                  {avatar ? (
+                    <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    user?.name?.charAt(0) || '👤'
+                  )}
                 </div>
-                <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary-brand rounded-lg flex items-center justify-center text-white shadow-lg border-2 border-white">
-                  <Camera className="w-3 h-3" />
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-brand rounded-lg flex items-center justify-center text-white shadow-lg border-2 border-white hover:scale-110 transition-transform"
+                >
+                  <Camera className="w-4 h-4" />
                 </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImageUpload} 
+                  className="hidden" 
+                  accept="image/*"
+                />
               </div>
               <div className="flex-1">
                 <label className="text-[10px] font-black uppercase text-primary-brand tracking-widest hidden">{t.username}</label>
@@ -547,9 +665,9 @@ const SettingsView = ({ settings, setSettings, setShowIntro, user, onUpdateProfi
             </div>
             <button 
               onClick={handleProfileUpdate}
-              disabled={isSaving || editingName === user?.name}
+              disabled={isSaving || (editingName === user?.name && avatar === user?.avatar)}
               className={`w-full py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all ${
-                editingName !== user?.name 
+                (editingName !== user?.name || avatar !== user?.avatar)
                 ? 'bg-primary-brand text-white shadow-lg' 
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
@@ -618,7 +736,13 @@ const SettingsView = ({ settings, setSettings, setShowIntro, user, onUpdateProfi
           </button>
         </div>
 
-        <button className="w-full py-4 flex items-center justify-center gap-2 text-red-500 font-black uppercase text-xs tracking-widest hover:bg-red-50 rounded-2xl transition-all">
+        <button 
+          onClick={async () => {
+            await signOut(auth);
+            onUpdateProfile(null);
+          }}
+          className="w-full py-4 flex items-center justify-center gap-2 text-red-500 font-black uppercase text-xs tracking-widest hover:bg-red-50 rounded-2xl transition-all"
+        >
           <LogOut className="w-4 h-4" />
           {t.logout}
         </button>
@@ -643,7 +767,7 @@ export default function App() {
     localStorage.setItem('dunong_settings', JSON.stringify(settings));
   }, [settings]);
 
-  const [user, setUser] = useState<{name: string} | null>(() => {
+  const [user, setUser] = useState<{name: string, avatar?: string | null} | null>(() => {
     const saved = localStorage.getItem('dunong_user');
     return saved ? JSON.parse(saved) : null;
   });
@@ -657,7 +781,56 @@ export default function App() {
       lastActive: new Date().toISOString().split('T')[0]
     };
   });
-  
+
+  const [fbUser, setFbUser] = useState<any>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setFbUser(user);
+        // Fetch existing data from Firestore
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setUser({ name: data.name, avatar: data.avatar });
+          setProgress({
+            completedLessons: data.completedLessons || [],
+            points: data.points || 0,
+            streak: data.streak || 1,
+            lastActive: data.updatedAt ? (data.updatedAt as Timestamp).toDate().toISOString().split('T')[0] : null
+          });
+        }
+      } else {
+        setFbUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Sync profile to Firestore
+  useEffect(() => {
+    const syncProfile = async () => {
+      if (fbUser && user) {
+        try {
+          await setDoc(doc(db, 'users', fbUser.uid), {
+            name: user.name,
+            points: progress.points,
+            streak: progress.streak,
+            avatar: user.avatar || null,
+            completedLessons: progress.completedLessons,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (error) {
+          console.error("Sync Error:", error);
+        }
+      }
+    };
+
+    const timeout = setTimeout(syncProfile, 2000); // Debounce sync
+    return () => clearTimeout(timeout);
+  }, [user, progress, fbUser]);
+
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem('dunong_notes');
     return saved ? JSON.parse(saved) : [];
@@ -682,8 +855,20 @@ export default function App() {
     localStorage.setItem('dunong_started', 'true');
   };
 
-  const handleAuth = (name: string) => {
-    setUser({ name });
+  const handleAuth = async (name: string, isGoogle?: boolean) => {
+    if (isGoogle) {
+      // User is already signed in via AuthView's handleGoogleLogin
+      // The onAuthStateChanged will handle the state update
+    } else {
+      // Anonymously sign in so they can store data in Firestore
+      try {
+        const result = await signInAnonymously(auth);
+        setUser({ name });
+      } catch (error) {
+        console.error("Anon Signin Error:", error);
+        setUser({ name }); // Fallback to local only if firebase fails
+      }
+    }
   };
 
   const handleCompleteLesson = (plusPoints: number) => {
@@ -717,7 +902,7 @@ export default function App() {
       </AnimatePresence>
 
       <div className="h-screen w-screen flex flex-col bg-paper-bg overflow-hidden relative">
-        {user && <GameNavigation activeTab={activeTab} setActiveTab={setActiveTab} progress={progress} settings={settings} />}
+        {user && <GameNavigation activeTab={activeTab} setActiveTab={setActiveTab} progress={progress} settings={settings} user={user} />}
         
         <main className="flex-1 overflow-y-auto px-6 pt-6 pb-32">
           <div className="max-w-3xl mx-auto">
@@ -763,8 +948,12 @@ export default function App() {
                   exit={{ opacity: 0, x: 20 }}
                 >
                   <div className="text-center py-20 bg-white rounded-3xl border-2 border-parchment shadow-lg mb-12">
-                    <div className="w-40 h-40 bg-accent-gold/20 rounded-[48px] mx-auto flex items-center justify-center border-4 border-primary-brand shadow-inner mb-6">
-                      <User className="w-20 h-20 text-primary-brand opacity-60" />
+                    <div className="w-40 h-40 rounded-[3rem] bg-paper-bg border-[6px] border-white shadow-2xl mx-auto mb-8 flex items-center justify-center text-6xl text-primary-brand overflow-hidden">
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        user?.name?.charAt(0) || '👤'
+                      )}
                     </div>
                     <div>
                       <h2 className="text-5xl font-black uppercase text-primary-dark tracking-tight">
