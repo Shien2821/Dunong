@@ -17,14 +17,14 @@ import { REFINED_BAYBAYIN, LESSONS, Lesson, BaybayinChar, COMMUNITY_NOTES } from
 
 const AUDIO_FILES = {
   music: [
-    { id: 'bahay-kubo', name: 'Bahay Kubo', url: 'https://archive.org/download/PhilippineFolkSongs/BahayKubo.mp3' },
-    { id: 'magtanim', name: "Magtanim ay 'di Biro", url: 'https://archive.org/download/PhilippineFolkSongs/MagtanimAyDiBiro.mp3' },
-    { id: 'leron', name: 'Leron Leron Sinta', url: 'https://archive.org/download/PhilippineFolkSongs/LeronLeronSinta.mp3' },
+    { id: 'bahay-kubo', name: 'Bahay Kubo', url: 'https://ia800905.us.archive.org/24/items/PhilippineFolkSongs/BahayKubo.mp3' },
+    { id: 'magtanim', name: "Magtanim ay 'di Biro", url: 'https://ia800905.us.archive.org/24/items/PhilippineFolkSongs/MagtanimAyDiBiro.mp3' },
+    { id: 'leron', name: 'Leron Leron Sinta', url: 'https://ia800905.us.archive.org/24/items/PhilippineFolkSongs/LeronLeronSinta.mp3' },
   ],
   sfx: {
-    click: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-    correct: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
-    wrong: 'https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3',
+    click: 'https://www.soundjay.com/buttons/sounds/button-16.mp3',
+    correct: 'https://www.soundjay.com/buttons/sounds/button-3.mp3',
+    wrong: 'https://www.soundjay.com/buttons/sounds/button-10.mp3',
   }
 };
 
@@ -510,7 +510,7 @@ const AuthView = ({ onComplete, playSfx }: { onComplete: (name: string) => void,
   );
 };
 
-const SettingsView = ({ settings, setSettings, playSfx }: { settings: any, setSettings: any, playSfx: (s: string) => void }) => {
+const SettingsView = ({ settings, setSettings, playSfx, setShowIntro }: { settings: any, setSettings: any, playSfx: (s: string) => void, setShowIntro: (s: boolean) => void }) => {
   return (
     <div className="space-y-12">
       <h2 className="text-5xl font-black uppercase text-primary-dark">Settings</h2>
@@ -530,6 +530,7 @@ const SettingsView = ({ settings, setSettings, playSfx }: { settings: any, setSe
             <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform ${settings.sfx ? 'translate-x-8' : 'translate-x-0'}`}></div>
           </button>
         </div>
+
         <div className="vibrant-card flex justify-between items-center">
           <div>
             <p className="text-xl font-bold">Background Music</p>
@@ -543,6 +544,40 @@ const SettingsView = ({ settings, setSettings, playSfx }: { settings: any, setSe
             className={`w-16 h-8 rounded-full flex items-center px-1 transition-colors ${settings.music ? 'bg-accent-green' : 'bg-parchment'}`}
           >
             <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform ${settings.music ? 'translate-x-8' : 'translate-x-0'}`}></div>
+          </button>
+        </div>
+
+        <div className="vibrant-card space-y-4">
+          <p className="text-sm font-black uppercase text-gray-400">Audio Playlist</p>
+          <div className="grid gap-2">
+            {AUDIO_FILES.music.map((song, i) => (
+              <button 
+                key={song.id}
+                onClick={() => {
+                  playSfx('click');
+                  window.dispatchEvent(new CustomEvent('changeSong', { detail: i }));
+                }}
+                className="w-full text-left p-3 rounded-xl border border-parchment hover:border-accent-gold-dark transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg opacity-40 font-black">{i + 1}</span>
+                  <span className="font-bold">{song.name}</span>
+                </div>
+                <ChevronRight className="w-4 h-4 opacity-20 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="vibrant-card">
+          <button 
+            onClick={() => {
+              playSfx('click');
+              setShowIntro(true);
+            }}
+            className="w-full text-primary-brand font-black uppercase text-sm tracking-widest hover:underline text-center"
+          >
+            Panoorin muli ang Intro
           </button>
         </div>
       </div>
@@ -571,33 +606,44 @@ export default function App() {
   useEffect(() => {
     if (!musicAudio) return;
 
+    const onEnded = () => {
+      setCurrentSongIdx((prev) => (prev + 1) % AUDIO_FILES.music.length);
+    };
+
+    const handleSongChange = (e: any) => {
+      setCurrentSongIdx(e.detail);
+    };
+    
+    window.addEventListener('changeSong', handleSongChange);
+    musicAudio.addEventListener('ended', onEnded);
+    
+    return () => {
+      window.removeEventListener('changeSong', handleSongChange);
+      musicAudio.removeEventListener('ended', onEnded);
+    };
+  }, [musicAudio]);
+
+  useEffect(() => {
+    if (!musicAudio) return;
+
     if (audioSettings.music && !showIntro) {
-      musicAudio.src = AUDIO_FILES.music[currentSongIdx].url;
+      if (musicAudio.src !== AUDIO_FILES.music[currentSongIdx].url) {
+        musicAudio.src = AUDIO_FILES.music[currentSongIdx].url;
+      }
       musicAudio.volume = audioSettings.volume;
-      musicAudio.loop = false;
-      
-      const onEnded = () => {
-        setCurrentSongIdx((prev) => (prev + 1) % AUDIO_FILES.music.length);
-      };
-      
-      musicAudio.addEventListener('ended', onEnded);
       
       const playPromise = musicAudio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          console.log("Audio playback blocked. Waiting for user interaction.");
+          console.warn("Audio playback blocked. Waiting for interaction.");
         });
       }
-
-      return () => {
-        musicAudio.removeEventListener('ended', onEnded);
-      };
     } else {
       musicAudio.pause();
     }
   }, [audioSettings.music, currentSongIdx, showIntro, musicAudio]);
 
-  // Sync music settings changes (like volume) without reloading the song
+  // Sync music settings changes (like volume or toggling)
   useEffect(() => {
     if (musicAudio) {
       musicAudio.volume = audioSettings.volume;
@@ -614,12 +660,13 @@ export default function App() {
     const url = (AUDIO_FILES.sfx as any)[type];
     if (url) {
       const sfx = new Audio(url);
-      sfx.volume = 0.6;
-      sfx.play().catch((e) => console.warn("SFX blocked", e));
+      sfx.volume = 0.5;
+      sfx.play().catch(() => {});
     }
     
-    // Also try to resume background music if it was blocked
-    if (audioSettings.music && !showIntro && musicAudio.paused) {
+    // Explicitly try to resume BG music on ANY interaction to unlock it
+    // We allow this even if showIntro is true if the intention is to transition out of intro
+    if (audioSettings.music && musicAudio.paused && musicAudio.src) {
       musicAudio.play().catch(() => {});
     }
   };
@@ -788,7 +835,7 @@ export default function App() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                 >
-                  <SettingsView settings={audioSettings} setSettings={setAudioSettings} playSfx={playSfx} />
+                  <SettingsView settings={audioSettings} setSettings={setAudioSettings} playSfx={playSfx} setShowIntro={setShowIntro} />
                 </motion.div>
               )}
             </AnimatePresence>
