@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Libre Baskerville", serif;
+
+  --color-primary-brand: #8B4513;
+  --color-primary-dark: #5D2E0E;
+  --color-accent-gold: #DAA520;
+  --color-accent-gold-dark: #B8860B;
+  --color-accent-green: #2E8B57;
+  --color-paper-bg: #FAF7F2;
+  --color-parchment: #E5D5C0;
+  --color-ink: #1C1C1C;
+}
+
+@layer base {
+  body {
+    @apply bg-paper-bg text-ink font-sans;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+/* Global scrollbar hide */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
+}
+
+/* Custom UI Patterns from Vibrant Palette */
+.sidebar-nav-item {
+  @apply flex items-center gap-4 p-4 rounded-2xl font-bold transition-all uppercase tracking-wide cursor-pointer;
+}
+
+.sidebar-nav-item-active {
+  @apply bg-parchment text-primary-dark;
+}
+
+.sidebar-nav-item-inactive {
+  @apply text-gray-400 hover:bg-[#F3EBE0] hover:text-gray-600;
+}
+
+.vibrant-card {
+  @apply bg-white rounded-2xl border-2 border-parchment shadow-sm p-6 transition-all;
+}
+
+.vibrant-button {
+  @apply bg-accent-gold text-primary-dark font-black rounded-xl border-b-4 border-accent-gold-dark active:border-b-0 active:translate-y-[2px] transition-all px-6 py-2 uppercase tracking-widest disabled:opacity-50 disabled:pointer-events-none;
+}
+
+.vibrant-button-primary {
+  @apply bg-primary-brand text-white border-primary-dark;
+}
+
+.vibrant-badge {
+  @apply flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border-2 border-parchment shadow-sm font-black text-primary-dark;
+}
+
+.baybayin-char-circle {
+  @apply w-24 h-24 rounded-full border-b-[8px] flex items-center justify-center text-white text-3xl font-bold shadow-lg transition-all;
+}
