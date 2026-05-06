@@ -17,14 +17,14 @@ import { REFINED_BAYBAYIN, LESSONS, Lesson, BaybayinChar, COMMUNITY_NOTES } from
 
 const AUDIO_FILES = {
   music: [
-    { id: 'bahay-kubo', name: 'Bahay Kubo', url: 'https://ia800905.us.archive.org/24/items/PhilippineFolkSongs/BahayKubo.mp3' },
-    { id: 'magtanim', name: "Magtanim ay 'di Biro", url: 'https://ia800905.us.archive.org/24/items/PhilippineFolkSongs/MagtanimAyDiBiro.mp3' },
-    { id: 'leron', name: 'Leron Leron Sinta', url: 'https://ia800905.us.archive.org/24/items/PhilippineFolkSongs/LeronLeronSinta.mp3' },
+    { id: 'bahay-kubo', name: 'Bahay Kubo', url: 'https://archive.org/download/PhilippineFolkSongs/BahayKubo.mp3' },
+    { id: 'magtanim', name: "Magtanim ay 'di Biro", url: 'https://archive.org/download/PhilippineFolkSongs/MagtanimAyDiBiro.mp3' },
+    { id: 'leron', name: 'Leron Leron Sinta', url: 'https://archive.org/download/PhilippineFolkSongs/LeronLeronSinta.mp3' },
   ],
   sfx: {
-    click: 'https://www.soundjay.com/buttons/button-21.mp3',
-    correct: 'https://www.soundjay.com/misc/sounds/bell-ring-01.mp3',
-    wrong: 'https://www.soundjay.com/misc/sounds/fail-trombone-01.mp3',
+    click: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
+    correct: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
+    wrong: 'https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3',
   }
 };
 
@@ -53,7 +53,7 @@ const GameNavigation = ({ activeTab, setActiveTab, progress, playSfx }: { active
   ];
 
   const bottomTabs = [
-    { id: 'dashboard', icon: '🏰', label: 'Leksyon' },
+    { id: 'dashboard', icon: '🏰', label: 'Mag-aral' },
     { id: 'notes', icon: '📜', label: 'Kaalaman' },
   ];
 
@@ -435,8 +435,6 @@ const NotesView = ({ notes, onAddNote, playSfx }: { notes: Note[], onAddNote: (c
 
 // --- Main App ---
 
-// --- Main App ---
-
 const IntroView = ({ onStart, playSfx }: { onStart: () => void, playSfx: (s: string) => void }) => {
   return (
     <div className="fixed inset-0 bg-[#8B4513] flex flex-col items-center justify-center p-8 z-[100] text-white">
@@ -491,7 +489,7 @@ const AuthView = ({ onComplete, playSfx }: { onComplete: (name: string) => void,
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Hal: Rizal_1861"
+              placeholder="Hal: Bhie143"
               className="w-full p-4 bg-paper-bg border-2 border-parchment rounded-2xl focus:outline-none focus:border-accent-gold font-bold text-xl"
             />
           </div>
@@ -563,6 +561,7 @@ export default function App() {
   });
 
   const [currentSongIdx, setCurrentSongIdx] = useState(0);
+  const [musicAudio] = useState(() => new Audio());
 
   useEffect(() => {
     localStorage.setItem('dunong_audio', JSON.stringify(audioSettings));
@@ -570,44 +569,58 @@ export default function App() {
 
   // BG Music logic
   useEffect(() => {
-    let audio: HTMLAudioElement | null = null;
-    
+    if (!musicAudio) return;
+
     if (audioSettings.music && !showIntro) {
-      audio = new Audio(AUDIO_FILES.music[currentSongIdx].url);
-      audio.loop = false;
-      audio.volume = audioSettings.volume;
+      musicAudio.src = AUDIO_FILES.music[currentSongIdx].url;
+      musicAudio.volume = audioSettings.volume;
+      musicAudio.loop = false;
       
-      const playNext = () => {
+      const onEnded = () => {
         setCurrentSongIdx((prev) => (prev + 1) % AUDIO_FILES.music.length);
       };
       
-      audio.addEventListener('ended', playNext);
+      musicAudio.addEventListener('ended', onEnded);
       
-      const playPromise = audio.play();
+      const playPromise = musicAudio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          // Auto-play might be blocked, wait for user interaction
           console.log("Audio playback blocked. Waiting for user interaction.");
         });
       }
 
       return () => {
-        if (audio) {
-          audio.removeEventListener('ended', playNext);
-          audio.pause();
-          audio = null;
-        }
+        musicAudio.removeEventListener('ended', onEnded);
       };
+    } else {
+      musicAudio.pause();
     }
-  }, [audioSettings.music, currentSongIdx, showIntro]);
+  }, [audioSettings.music, currentSongIdx, showIntro, musicAudio]);
+
+  // Sync music settings changes (like volume) without reloading the song
+  useEffect(() => {
+    if (musicAudio) {
+      musicAudio.volume = audioSettings.volume;
+      if (!audioSettings.music) {
+        musicAudio.pause();
+      } else if (!showIntro && musicAudio.paused && musicAudio.src) {
+        musicAudio.play().catch(() => {});
+      }
+    }
+  }, [audioSettings.volume, audioSettings.music, showIntro, musicAudio]);
 
   const playSfx = (type: string) => {
     if (!audioSettings.sfx) return;
     const url = (AUDIO_FILES.sfx as any)[type];
     if (url) {
-      const audio = new Audio(url);
-      audio.volume = 0.6;
-      audio.play().catch(() => {});
+      const sfx = new Audio(url);
+      sfx.volume = 0.6;
+      sfx.play().catch((e) => console.warn("SFX blocked", e));
+    }
+    
+    // Also try to resume background music if it was blocked
+    if (audioSettings.music && !showIntro && musicAudio.paused) {
+      musicAudio.play().catch(() => {});
     }
   };
   const [user, setUser] = useState<{name: string} | null>(() => {

@@ -74,7 +74,7 @@ export const COLORS = {
 };
 
 export const COMMUNITY_NOTES = [
-  { id: 'c1', user: 'Lakan', content: "The 'Kudlit' is essential! A dot above changes an 'A' consonant to 'E/I', and below to 'O/U'. Don't forget it!", createdAt: Date.now() - 86400000 },
-  { id: 'c2', user: 'Hara', content: "Baybayin is an 'abugida' – each character represents a consonant-vowel combo. It's so different from the Latin alphabet!", createdAt: Date.now() - 172800000 },
-  { id: 'c3', user: 'Bayani', content: "Did you know? In ancient times, people wrote on bamboo using sharp daggers! That's why the lines are often curved.", createdAt: Date.now() - 259200000 },
+  { id: 'c1', user: 'Jaychael', content: "The 'Kudlit' is essential! A dot above changes an 'A' consonant to 'E/I', and below to 'O/U'. Don't forget it!", createdAt: Date.now() - 86400000 },
+  { id: 'c2', user: 'Laurice', content: "Baybayin is an 'abugida' – each character represents a consonant-vowel combo. It's so different from the Latin alphabet!", createdAt: Date.now() - 172800000 },
+  { id: 'c3', user: 'Bading', content: "Did you know? In ancient times, people wrote on bamboo using sharp daggers! That's why the lines are often curved.", createdAt: Date.now() - 259200000 },
 ];
