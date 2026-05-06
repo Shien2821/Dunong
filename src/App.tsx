@@ -9,24 +9,17 @@ import {
   ChevronRight,
   CheckCircle2,
   XCircle,
-  Award
+  Award,
+  Globe,
+  Facebook,
+  Mail,
+  Camera,
+  LogOut
 } from 'lucide-react';
 import { REFINED_BAYBAYIN, LESSONS, Lesson, BaybayinChar, COMMUNITY_NOTES } from './constants';
+import { TRANSLATIONS, Language, getTranslation } from './translations';
 
 // --- Constants ---
-
-const AUDIO_FILES = {
-  music: [
-    { id: 'bahay-kubo', name: 'Bahay Kubo', url: 'https://ia800905.us.archive.org/24/items/PhilippineFolkSongs/BahayKubo.mp3' },
-    { id: 'magtanim', name: "Magtanim ay 'di Biro", url: 'https://ia800905.us.archive.org/24/items/PhilippineFolkSongs/MagtanimAyDiBiro.mp3' },
-    { id: 'leron', name: 'Leron Leron Sinta', url: 'https://ia800905.us.archive.org/24/items/PhilippineFolkSongs/LeronLeronSinta.mp3' },
-  ],
-  sfx: {
-    click: 'https://www.soundjay.com/buttons/sounds/button-16.mp3',
-    correct: 'https://www.soundjay.com/buttons/sounds/button-3.mp3',
-    wrong: 'https://www.soundjay.com/buttons/sounds/button-10.mp3',
-  }
-};
 
 // --- Types ---
 interface UserProgress {
@@ -45,16 +38,18 @@ interface Note {
 
 // --- Components ---
 
-const GameNavigation = ({ activeTab, setActiveTab, progress, playSfx }: { activeTab: string, setActiveTab: (t: string) => void, progress: UserProgress, playSfx: (s: string) => void }) => {
+const GameNavigation = ({ activeTab, setActiveTab, progress, settings }: { activeTab: string, setActiveTab: (t: string) => void, progress: UserProgress, settings: any }) => {
+  const t = getTranslation(settings.language as Language);
+
   const leftTabs = [
-    { id: 'profile', icon: '👤', label: 'Profile' },
-    { id: 'leaderboard', icon: '🏆', label: 'Ranggo' },
-    { id: 'settings', icon: '⚙️', label: 'Settings' },
+    { id: 'profile', icon: '👤', label: t.profile },
+    { id: 'leaderboard', icon: '🏆', label: t.leaderboard },
+    { id: 'settings', icon: '⚙️', label: t.settings },
   ];
 
   const bottomTabs = [
-    { id: 'dashboard', icon: '🏰', label: 'Mag-aral' },
-    { id: 'notes', icon: '📜', label: 'Kaalaman' },
+    { id: 'dashboard', icon: '🏰', label: t.dashboard },
+    { id: 'notes', icon: '📜', label: t.notes },
   ];
 
   return (
@@ -67,7 +62,6 @@ const GameNavigation = ({ activeTab, setActiveTab, progress, playSfx }: { active
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
-              playSfx('click');
               setActiveTab(tab.id);
             }}
             className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center border-b-2 shadow-lg pointer-events-auto transition-all relative ${
@@ -94,7 +88,6 @@ const GameNavigation = ({ activeTab, setActiveTab, progress, playSfx }: { active
             whileHover={{ y: -3 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
-              playSfx('click');
               setActiveTab(tab.id);
             }}
             className={`flex flex-col items-center gap-0.5 group transition-all ${
@@ -114,7 +107,8 @@ const GameNavigation = ({ activeTab, setActiveTab, progress, playSfx }: { active
   );
 };
 
-const Dashboard = ({ progress, onStartLesson, playSfx }: { progress: UserProgress, onStartLesson: (l: Lesson) => void, playSfx: (s: string) => void }) => {
+const Dashboard = ({ progress, onStartLesson, settings }: { progress: UserProgress, onStartLesson: (l: Lesson) => void, settings: any }) => {
+  const t = getTranslation(settings.language as Language);
   const currentChapter = LESSONS.find(l => !progress.completedLessons.includes(l.id)) || LESSONS[0];
   const chapterIdx = LESSONS.findIndex(l => l.id === currentChapter.id);
 
@@ -123,17 +117,16 @@ const Dashboard = ({ progress, onStartLesson, playSfx }: { progress: UserProgres
       <header className="p-6 md:p-8 bg-primary-brand text-white flex flex-col gap-1 -mx-6 md:-mx-12 -mt-6 md:-mt-12 mb-8 shadow-lg">
         <div className="flex justify-between items-center max-w-4xl mx-auto w-full">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-80">Antas {chapterIdx + 1}</h2>
-            <h3 className="text-2xl font-black uppercase tracking-tight">{currentChapter.title}</h3>
+            <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-80">{settings.language === 'en' ? 'Chapter' : 'Antas'} {chapterIdx + 1}</h2>
+            <h3 className="text-2xl font-black uppercase tracking-tight">{(t as any)[currentChapter.id] || currentChapter.title}</h3>
           </div>
           <button 
             onClick={() => {
-              playSfx('click');
               onStartLesson(currentChapter);
             }}
             className="vibrant-button text-xs px-4"
           >
-            Mabuhay
+            {t.startLesson}
           </button>
         </div>
       </header>
@@ -154,7 +147,6 @@ const Dashboard = ({ progress, onStartLesson, playSfx }: { progress: UserProgres
                 <div 
                   onClick={() => {
                     if (!isLocked) {
-                      playSfx('click');
                       onStartLesson(lesson);
                     }
                   }}
@@ -172,12 +164,12 @@ const Dashboard = ({ progress, onStartLesson, playSfx }: { progress: UserProgres
                    isNext ? 'bg-white border-accent-green text-accent-green shadow-lg' :
                    'bg-gray-50 border-gray-100 text-gray-300'
                 }`}>
-                  {isCompleted ? 'TAPOS NA' : isNext ? 'KASALUKUYAN' : 'NAKAHARANG'}
+                  {isCompleted ? t.completed : isNext ? (settings.language === 'en' ? 'CURRENT' : 'KASALUKUYAN') : t.locked}
                 </div>
 
                 {isNext && (
                    <div className="absolute top-22 left-1/2 -translate-x-1/2 bg-white shadow-xl px-3 py-1.5 rounded-xl border-2 border-accent-green min-w-[120px] text-center z-10">
-                     <p className="text-xs font-black text-accent-green uppercase">{lesson.title}</p>
+                     <p className="text-xs font-black text-accent-green uppercase">{(t as any)[lesson.id] || lesson.title}</p>
                    </div>
                 )}
               </div>
@@ -192,7 +184,8 @@ const Dashboard = ({ progress, onStartLesson, playSfx }: { progress: UserProgres
 };
 
 
-const LessonView = ({ lesson, onComplete, onCancel, playSfx }: { lesson: Lesson, onComplete: (points: number) => void, onCancel: () => void, playSfx: (s: string) => void }) => {
+const LessonView = ({ lesson, onComplete, onCancel, settings }: { lesson: Lesson, onComplete: (points: number) => void, onCancel: () => void, settings: any }) => {
+  const t = getTranslation(settings.language as Language);
   const [step, setStep] = useState(0);
   const [selectedChars] = useState(() => {
     return lesson.characters?.map(cid => REFINED_BAYBAYIN.find(c => c.id === cid)!) || [];
@@ -211,14 +204,13 @@ const LessonView = ({ lesson, onComplete, onCancel, playSfx }: { lesson: Lesson,
   });
 
   const questions = selectedChars.map(char => ({
-    question: `Piliin ang katumbas na titik: ${char.char}`,
+    question: `${settings.language === 'en' ? 'Select the corresponding letter:' : 'Piliin ang katumbas na titik:'} ${char.char}`,
     answer: char.latin,
     options: [char.latin, ...REFINED_BAYBAYIN.filter(c => c.id !== char.id).slice(0, 3).map(c => c.latin)].sort(() => Math.random() - 0.5),
     explanation: char.description
   }));
 
   const handleNext = () => {
-    playSfx('click');
     if (lesson.type === 'intro') {
       if (step < selectedChars.length - 1) {
         setStep(step + 1);
@@ -243,7 +235,6 @@ const LessonView = ({ lesson, onComplete, onCancel, playSfx }: { lesson: Lesson,
   const handleCheckAnswer = (option: string) => {
     if (quizState.selectedAnswer) return;
     const isCorrect = option === questions[quizState.currentQuestion].answer;
-    playSfx(isCorrect ? 'correct' : 'wrong');
     setQuizState({ ...quizState, selectedAnswer: option, isCorrect, showExplanation: true });
   };
 
@@ -311,7 +302,7 @@ const LessonView = ({ lesson, onComplete, onCancel, playSfx }: { lesson: Lesson,
                   >
                     <div className="flex items-center gap-2 font-black uppercase tracking-widest mb-1 text-[10px]">
                       {quizState.isCorrect ? <CheckCircle2 className="w-4 h-4"/> : <XCircle className="w-4 h-4"/>}
-                      {quizState.isCorrect ? 'Tumpak!' : 'Mali, subukan uli.'}
+                      {quizState.isCorrect ? t.correct : t.wrong}
                     </div>
                     <p className="font-serif italic text-base opacity-80">{questions[quizState.currentQuestion].explanation}</p>
                   </motion.div>
@@ -327,7 +318,7 @@ const LessonView = ({ lesson, onComplete, onCancel, playSfx }: { lesson: Lesson,
             onClick={handleNext} 
             className="vibrant-button px-16 py-4 text-xl"
           >
-            Ipagpatuloy
+            {t.continue}
           </button>
         </div>
       </div>
@@ -335,7 +326,8 @@ const LessonView = ({ lesson, onComplete, onCancel, playSfx }: { lesson: Lesson,
   );
 };
 
-const Leaderboard = () => {
+const Leaderboard = ({ settings }: { settings: any }) => {
+  const t = getTranslation(settings.language as Language);
   const mockUsers = [
     { name: 'Shien', points: 1250, streak: 12 },
     { name: 'Sof', points: 1100, streak: 8 },
@@ -346,7 +338,7 @@ const Leaderboard = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-4xl font-black uppercase text-primary-dark px-2">Ranggo</h2>
+      <h2 className="text-4xl font-black uppercase text-primary-dark px-2">{t.leaderboard}</h2>
       <div className="vibrant-card p-0 overflow-hidden shadow-sm">
         {mockUsers.map((user, i) => (
           <div key={user.name} className={`flex items-center justify-between p-4 border-b border-parchment/30 last:border-0 ${i === 0 ? 'bg-accent-gold/5' : ''}`}>
@@ -360,13 +352,13 @@ const Leaderboard = () => {
               <div>
                 <p className="text-lg font-black text-primary-dark uppercase tracking-tight leading-none">{user.name}</p>
                 <div className="flex gap-2 mt-1">
-                   <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🔥 {user.streak} ARW</span>
+                   <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🔥 {user.streak} {settings.language === 'fil' ? 'ARW' : 'DAY'}</span>
                 </div>
               </div>
             </div>
             <div className="text-right">
               <p className="text-xl font-black text-primary-brand leading-none">{user.points}</p>
-              <p className="text-[9px] font-black uppercase text-gray-400 mt-1">XP</p>
+              <p className="text-[9px] font-black uppercase text-gray-400 mt-1">{t.score}</p>
             </div>
           </div>
         ))}
@@ -375,33 +367,33 @@ const Leaderboard = () => {
   );
 };
 
-const NotesView = ({ notes, onAddNote, playSfx }: { notes: Note[], onAddNote: (content: string) => void, playSfx: (s: string) => void }) => {
+const NotesView = ({ notes, onAddNote, settings }: { notes: Note[], onAddNote: (content: string) => void, settings: any }) => {
+  const t = getTranslation(settings.language as Language);
   const [newNote, setNewNote] = useState('');
   const [showCommunity, setShowCommunity] = useState(true);
 
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h2 className="text-5xl font-black uppercase text-primary-dark">Dagdag Kaalaman</h2>
+        <h2 className="text-5xl font-black uppercase text-primary-dark">{t.notes}</h2>
       </div>
 
       <div className="space-y-6">
         <div className="p-5 bg-accent-gold/5 border-2 border-accent-gold/20 border-dashed rounded-2xl">
-          <p className="text-primary-dark font-serif italic text-base">Ibahagi ang iyong kaalaman o magbasa mula sa komunidad.</p>
+          <p className="text-primary-dark font-serif italic text-base">{settings.language === 'en' ? 'Share your knowledge or read from the community.' : 'Ibahagi ang iyong kaalaman o magbasa mula sa komunidad.'}</p>
         </div>
 
         <div className="vibrant-card p-4 space-y-4">
           <textarea
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Isulat ang iyong alam..."
+            placeholder={t.writeNote}
             className="w-full h-24 focus:outline-none transition-all font-serif p-2 leading-relaxed text-lg bg-transparent border-b border-parchment"
           />
           <div className="flex justify-end">
             <button 
               onClick={() => {
                 if (newNote) {
-                  playSfx('click');
                   onAddNote(newNote);
                   setNewNote('');
                 }
@@ -409,13 +401,13 @@ const NotesView = ({ notes, onAddNote, playSfx }: { notes: Note[], onAddNote: (c
               className="vibrant-button flex items-center gap-2 py-2 px-4 text-xs"
             >
               <PlusCircle className="w-4 h-4" />
-              Ibahagi
+              {t.addNote}
             </button>
           </div>
         </div>
 
         <div className="grid gap-4 mt-8">
-          {/* User's recently added notes can appear here too if we want, but for now let's focus on the board */}
+          <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 px-1">{t.communityNotes}</h3>
           {COMMUNITY_NOTES.map(cn => (
             <div key={cn.id} className="vibrant-card space-y-3 hover:border-accent-gold transition-colors p-4">
               <div className="flex items-center gap-2">
@@ -435,7 +427,8 @@ const NotesView = ({ notes, onAddNote, playSfx }: { notes: Note[], onAddNote: (c
 
 // --- Main App ---
 
-const IntroView = ({ onStart, playSfx }: { onStart: () => void, playSfx: (s: string) => void }) => {
+const IntroView = ({ onStart, settings }: { onStart: () => void, settings: any }) => {
+  const t = getTranslation(settings.language as Language);
   return (
     <div className="fixed inset-0 bg-[#8B4513] flex flex-col items-center justify-center p-8 z-[100] text-white">
       <div className="max-w-md w-full text-center space-y-10">
@@ -449,19 +442,15 @@ const IntroView = ({ onStart, playSfx }: { onStart: () => void, playSfx: (s: str
         
         <div className="space-y-3">
           <h1 className="text-5xl font-black uppercase tracking-widest">Dunong</h1>
-          <p className="text-lg font-serif italic opacity-70 leading-relaxed px-4">
-            Unravel the ancient scripts of our ancestors. A journey into the heart of Baybayin.
-          </p>
         </div>
 
         <button 
           onClick={() => {
-            playSfx('click');
             onStart();
           }}
           className="w-full bg-accent-gold text-primary-dark font-black py-4 rounded-2xl text-xl uppercase tracking-widest border-b-[6px] border-accent-gold-dark hover:translate-y-[2px] hover:border-b-[4px] transition-all active:translate-y-[4px] active:border-b-0"
         >
-          Magsimula na
+          {t.getStarted}
         </button>
       </div>
       
@@ -472,24 +461,25 @@ const IntroView = ({ onStart, playSfx }: { onStart: () => void, playSfx: (s: str
   );
 };
 
-const AuthView = ({ onComplete, playSfx }: { onComplete: (name: string) => void, playSfx: (s: string) => void }) => {
+const AuthView = ({ onComplete, settings }: { onComplete: (name: string) => void, settings: any }) => {
+  const t = getTranslation(settings.language as Language);
   const [name, setName] = useState('');
   return (
     <div className="fixed inset-0 bg-paper-bg flex flex-col items-center justify-center p-8 z-[90]">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="text-4xl font-black text-primary-dark uppercase">Sino ka?</h2>
-          <p className="font-serif italic text-lg opacity-60">Ipakilala ang iyong sarili, bayani.</p>
+          <h2 className="text-4xl font-black text-primary-dark uppercase">{t.welcome}</h2>
+          <p className="font-serif italic text-lg opacity-60">{t.whatName}</p>
         </div>
         
         <div className="vibrant-card p-8 space-y-6">
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-primary-brand">Pangalan</label>
+            <label className="text-xs font-black uppercase tracking-widest text-primary-brand">{t.username}</label>
             <input 
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Hal: Bhie143"
+              placeholder={t.enterName}
               className="w-full p-4 bg-paper-bg border-2 border-parchment rounded-2xl focus:outline-none focus:border-accent-gold font-bold text-xl"
             />
           </div>
@@ -497,12 +487,11 @@ const AuthView = ({ onComplete, playSfx }: { onComplete: (name: string) => void,
           <button 
             disabled={!name}
             onClick={() => {
-              playSfx('click');
               onComplete(name);
             }}
             className="w-full vibrant-button py-4 text-xl"
           >
-            Pumasok
+            {t.getStarted}
           </button>
         </div>
       </div>
@@ -510,76 +499,129 @@ const AuthView = ({ onComplete, playSfx }: { onComplete: (name: string) => void,
   );
 };
 
-const SettingsView = ({ settings, setSettings, playSfx, setShowIntro }: { settings: any, setSettings: any, playSfx: (s: string) => void, setShowIntro: (s: boolean) => void }) => {
+const SettingsView = ({ settings, setSettings, setShowIntro, user, onUpdateProfile }: { settings: any, setSettings: any, setShowIntro: (s: boolean) => void, user: any, onUpdateProfile: (u: any) => void }) => {
+  const t = getTranslation(settings.language as Language);
+  const [editingName, setEditingName] = useState(user?.name || '');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const languages = [
+    { id: 'fil', label: 'Filipino', flag: '🇵🇭' },
+    { id: 'en', label: 'English', flag: '🇺🇸' },
+  ];
+
+  const handleProfileUpdate = () => {
+    setIsSaving(true);
+    setTimeout(() => {
+      onUpdateProfile({ ...user, name: editingName });
+      setIsSaving(false);
+    }, 500);
+  };
+
   return (
-    <div className="space-y-12">
-      <h2 className="text-5xl font-black uppercase text-primary-dark">Settings</h2>
-      <div className="grid gap-6">
-        <div className="vibrant-card flex justify-between items-center">
-          <div>
-            <p className="text-xl font-bold">Sound Effects</p>
-            <p className="text-sm opacity-60">Play sounds on correct actions</p>
-          </div>
-          <button 
-            onClick={() => {
-              setSettings((prev: any) => ({ ...prev, sfx: !prev.sfx }));
-              playSfx('click');
-            }}
-            className={`w-16 h-8 rounded-full flex items-center px-1 transition-colors ${settings.sfx ? 'bg-accent-green' : 'bg-parchment'}`}
-          >
-            <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform ${settings.sfx ? 'translate-x-8' : 'translate-x-0'}`}></div>
-          </button>
-        </div>
-
-        <div className="vibrant-card flex justify-between items-center">
-          <div>
-            <p className="text-xl font-bold">Background Music</p>
-            <p className="text-sm opacity-60">Traditional Filipino instruments</p>
-          </div>
-          <button 
-            onClick={() => {
-              setSettings((prev: any) => ({ ...prev, music: !prev.music }));
-              playSfx('click');
-            }}
-            className={`w-16 h-8 rounded-full flex items-center px-1 transition-colors ${settings.music ? 'bg-accent-green' : 'bg-parchment'}`}
-          >
-            <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform ${settings.music ? 'translate-x-8' : 'translate-x-0'}`}></div>
-          </button>
-        </div>
-
-        <div className="vibrant-card space-y-4">
-          <p className="text-sm font-black uppercase text-gray-400">Audio Playlist</p>
-          <div className="grid gap-2">
-            {AUDIO_FILES.music.map((song, i) => (
-              <button 
-                key={song.id}
-                onClick={() => {
-                  playSfx('click');
-                  window.dispatchEvent(new CustomEvent('changeSong', { detail: i }));
-                }}
-                className="w-full text-left p-3 rounded-xl border border-parchment hover:border-accent-gold-dark transition-all flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-lg opacity-40 font-black">{i + 1}</span>
-                  <span className="font-bold">{song.name}</span>
+    <div className="space-y-10 pb-12">
+      <h2 className="text-4xl font-black uppercase text-primary-dark">{t.settings}</h2>
+      
+      <div className="grid gap-8">
+        {/* Profile Edit */}
+        <section className="space-y-4">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 px-1">{t.editProfile}</p>
+          <div className="vibrant-card space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <div className="w-16 h-16 rounded-2xl bg-parchment flex items-center justify-center text-2xl">
+                  {user?.name?.charAt(0) || '👤'}
                 </div>
-                <ChevronRight className="w-4 h-4 opacity-20 group-hover:opacity-100 transition-opacity" />
+                <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary-brand rounded-lg flex items-center justify-center text-white shadow-lg border-2 border-white">
+                  <Camera className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] font-black uppercase text-primary-brand tracking-widest hidden">{t.username}</label>
+                <input 
+                  type="text" 
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  className="w-full bg-paper-bg border-b-2 border-parchment py-1 font-bold text-lg focus:outline-none focus:border-accent-gold"
+                />
+              </div>
+            </div>
+            <button 
+              onClick={handleProfileUpdate}
+              disabled={isSaving || editingName === user?.name}
+              className={`w-full py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all ${
+                editingName !== user?.name 
+                ? 'bg-primary-brand text-white shadow-lg' 
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {isSaving ? t.saving : t.saveProfile}
+            </button>
+          </div>
+        </section>
+
+        {/* Language Selection */}
+        <section className="space-y-4">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 px-1">{t.language}</p>
+          <div className="vibrant-card grid grid-cols-2 gap-3">
+            {languages.map((lang) => (
+              <button
+                key={lang.id}
+                onClick={() => setSettings((prev: any) => ({ ...prev, language: lang.id }))}
+                className={`py-4 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${
+                  settings.language === lang.id 
+                    ? 'border-accent-gold bg-accent-gold/5 text-primary-dark font-black' 
+                    : 'border-parchment hover:border-accent-gold/30'
+                }`}
+              >
+                <span className="text-2xl">{lang.flag}</span>
+                <span className="text-xs uppercase tracking-widest">{lang.label}</span>
               </button>
             ))}
           </div>
-        </div>
+        </section>
 
+        {/* Social Connections */}
+        <section className="space-y-4">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 px-1">{t.socialConnections}</p>
+          <div className="vibrant-card space-y-3">
+            <button className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-parchment hover:border-blue-600/30 transition-all group">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                  <Facebook className="w-5 h-5" />
+                </div>
+                <span className="font-bold text-gray-600">Facebook</span>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary-brand group-hover:underline">{t.connect}</span>
+            </button>
+
+            <button className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-parchment hover:border-red-600/30 transition-all group">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-50 rounded-lg text-red-600">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <span className="font-bold text-gray-600">Google</span>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary-brand group-hover:underline">{t.connect}</span>
+            </button>
+          </div>
+        </section>
+
+        {/* Danger Zone */}
         <div className="vibrant-card">
           <button 
             onClick={() => {
-              playSfx('click');
               setShowIntro(true);
             }}
-            className="w-full text-primary-brand font-black uppercase text-sm tracking-widest hover:underline text-center"
+            className="w-full vibrant-button py-4"
           >
-            Panoorin muli ang Intro
+            {t.playIntro}
           </button>
         </div>
+
+        <button className="w-full py-4 flex items-center justify-center gap-2 text-red-500 font-black uppercase text-xs tracking-widest hover:bg-red-50 rounded-2xl transition-all">
+          <LogOut className="w-4 h-4" />
+          {t.logout}
+        </button>
       </div>
     </div>
   );
@@ -590,86 +632,17 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   
-  const [audioSettings, setAudioSettings] = useState(() => {
-    const saved = localStorage.getItem('dunong_audio');
-    return saved ? JSON.parse(saved) : { music: true, sfx: true, volume: 0.4 };
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('dunong_settings');
+    return saved ? JSON.parse(saved) : { language: 'fil' };
   });
 
-  const [currentSongIdx, setCurrentSongIdx] = useState(0);
-  const [musicAudio] = useState(() => new Audio());
+  const t = getTranslation(settings.language as Language);
 
   useEffect(() => {
-    localStorage.setItem('dunong_audio', JSON.stringify(audioSettings));
-  }, [audioSettings]);
+    localStorage.setItem('dunong_settings', JSON.stringify(settings));
+  }, [settings]);
 
-  // BG Music logic
-  useEffect(() => {
-    if (!musicAudio) return;
-
-    const onEnded = () => {
-      setCurrentSongIdx((prev) => (prev + 1) % AUDIO_FILES.music.length);
-    };
-
-    const handleSongChange = (e: any) => {
-      setCurrentSongIdx(e.detail);
-    };
-    
-    window.addEventListener('changeSong', handleSongChange);
-    musicAudio.addEventListener('ended', onEnded);
-    
-    return () => {
-      window.removeEventListener('changeSong', handleSongChange);
-      musicAudio.removeEventListener('ended', onEnded);
-    };
-  }, [musicAudio]);
-
-  useEffect(() => {
-    if (!musicAudio) return;
-
-    if (audioSettings.music && !showIntro) {
-      if (musicAudio.src !== AUDIO_FILES.music[currentSongIdx].url) {
-        musicAudio.src = AUDIO_FILES.music[currentSongIdx].url;
-      }
-      musicAudio.volume = audioSettings.volume;
-      
-      const playPromise = musicAudio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          console.warn("Audio playback blocked. Waiting for interaction.");
-        });
-      }
-    } else {
-      musicAudio.pause();
-    }
-  }, [audioSettings.music, currentSongIdx, showIntro, musicAudio]);
-
-  // Sync music settings changes (like volume or toggling)
-  useEffect(() => {
-    if (musicAudio) {
-      musicAudio.volume = audioSettings.volume;
-      if (!audioSettings.music) {
-        musicAudio.pause();
-      } else if (!showIntro && musicAudio.paused && musicAudio.src) {
-        musicAudio.play().catch(() => {});
-      }
-    }
-  }, [audioSettings.volume, audioSettings.music, showIntro, musicAudio]);
-
-  const playSfx = (type: string) => {
-    if (!audioSettings.sfx) return;
-    const url = (AUDIO_FILES.sfx as any)[type];
-    if (url) {
-      const sfx = new Audio(url);
-      sfx.volume = 0.5;
-      sfx.play().catch(() => {});
-    }
-    
-    // Explicitly try to resume BG music on ANY interaction to unlock it
-    // We allow this even if showIntro is true if the intention is to transition out of intro
-    if (audioSettings.music && musicAudio.paused && musicAudio.src) {
-      musicAudio.play().catch(() => {});
-    }
-  };
   const [user, setUser] = useState<{name: string} | null>(() => {
     const saved = localStorage.getItem('dunong_user');
     return saved ? JSON.parse(saved) : null;
@@ -739,12 +712,12 @@ export default function App() {
   return (
     <>
       <AnimatePresence>
-        {showIntro && <IntroView onStart={handleStart} playSfx={playSfx} />}
-        {!user && !showIntro && <AuthView onComplete={handleAuth} playSfx={playSfx} />}
+        {showIntro && <IntroView onStart={handleStart} settings={settings} />}
+        {!user && !showIntro && <AuthView onComplete={handleAuth} settings={settings} />}
       </AnimatePresence>
 
       <div className="h-screen w-screen flex flex-col bg-paper-bg overflow-hidden relative">
-        {user && <GameNavigation activeTab={activeTab} setActiveTab={setActiveTab} progress={progress} playSfx={playSfx} />}
+        {user && <GameNavigation activeTab={activeTab} setActiveTab={setActiveTab} progress={progress} settings={settings} />}
         
         <main className="flex-1 overflow-y-auto px-6 pt-6 pb-32">
           <div className="max-w-3xl mx-auto">
@@ -756,7 +729,7 @@ export default function App() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                 >
-                  <Dashboard progress={progress} onStartLesson={setActiveLesson} playSfx={playSfx} />
+                  <Dashboard progress={progress} onStartLesson={setActiveLesson} settings={settings} />
                 </motion.div>
               )}
 
@@ -767,7 +740,7 @@ export default function App() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                 >
-                  <Leaderboard />
+                  <Leaderboard settings={settings} />
                 </motion.div>
               )}
 
@@ -778,7 +751,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                 >
-                  <NotesView notes={notes} onAddNote={handleAddNote} playSfx={playSfx} />
+                  <NotesView notes={notes} onAddNote={handleAddNote} settings={settings} />
                 </motion.div>
               )}
 
@@ -795,9 +768,9 @@ export default function App() {
                     </div>
                     <div>
                       <h2 className="text-5xl font-black uppercase text-primary-dark tracking-tight">
-                        {user?.name || 'Magiting na Isko'}
+                        {user?.name || t.anonymous}
                       </h2>
-                      <p className="text-2xl text-primary-brand font-serif italic mt-2">Datu Level {Math.floor(progress.points / 100) + 1} • Baguhan</p>
+                      <p className="text-2xl text-primary-brand font-serif italic mt-2">Datu Level {Math.floor(progress.points / 100) + 1} • {settings.language === 'en' ? 'Novice' : 'Baguhan'}</p>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mt-12 px-6">
@@ -806,7 +779,7 @@ export default function App() {
                          <p className="text-2xl font-black text-primary-dark">{progress.points}</p>
                       </div>
                       <div className="bg-paper-bg p-4 rounded-2xl border-2 border-parchment shadow-sm">
-                         <p className="text-[10px] uppercase font-black text-gray-400">Aralin</p>
+                         <p className="text-[10px] uppercase font-black text-gray-400">{settings.language === 'en' ? 'Lesson' : 'Aralin'}</p>
                          <p className="text-2xl font-black text-primary-dark">{progress.completedLessons.length}</p>
                       </div>
                       <div className="bg-paper-bg p-4 rounded-2xl border-2 border-parchment shadow-sm">
@@ -817,12 +790,11 @@ export default function App() {
 
                     <button 
                       onClick={() => {
-                        playSfx('click');
                         setActiveTab('settings');
                       }}
                       className="mt-12 text-blue-600 font-black uppercase text-xs tracking-widest hover:underline"
                     >
-                      Pumunta sa Settings
+                      {settings.language === 'en' ? 'Go to Settings' : 'Pumunta sa Settings'}
                     </button>
                   </div>
                 </motion.div>
@@ -835,7 +807,13 @@ export default function App() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                 >
-                  <SettingsView settings={audioSettings} setSettings={setAudioSettings} playSfx={playSfx} setShowIntro={setShowIntro} />
+                  <SettingsView 
+                    settings={settings} 
+                    setSettings={setSettings} 
+                    setShowIntro={setShowIntro} 
+                    user={user}
+                    onUpdateProfile={setUser}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -848,7 +826,7 @@ export default function App() {
               lesson={activeLesson} 
               onComplete={handleCompleteLesson} 
               onCancel={() => setActiveLesson(null)} 
-              playSfx={playSfx}
+              settings={settings}
             />
           )}
         </AnimatePresence>
