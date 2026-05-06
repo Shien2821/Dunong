@@ -14,7 +14,10 @@ import {
   Facebook,
   Mail,
   Camera,
-  LogOut
+  LogOut,
+  Trophy as TrophyIcon,
+  Flame,
+  Star
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { 
@@ -141,6 +144,28 @@ const GameNavigation = ({ activeTab, setActiveTab, progress, settings, user }: {
   );
 };
 
+const PHILIPPINE_MAP_PATH = "M47,2 C52,2 55,5 55,10 C55,15 50,20 48,25 C46,30 55,35 60,40 C65,45 60,50 50,55 C40,60 35,55 30,50 C25,45 20,40 25,30 C30,20 35,10 40,5 Z M70,45 C75,45 80,50 80,55 C80,60 75,65 70,60 C65,55 65,50 70,45 Z M50,65 C55,65 60,70 60,75 C60,80 55,85 50,80 C45,75 45,70 50,65 Z M30,65 C35,65 40,70 40,75 C40,80 35,85 30,80 C25,75 25,70 30,65 Z M60,80 C70,80 80,85 80,95 C80,105 70,110 50,110 C30,110 20,105 20,95 C20,85 30,80 40,85 C50,90 55,85 60,80 Z";
+
+const MAP_POINTS = [
+  { x: 45, y: 5 },    // L1: Ilocos
+  { x: 55, y: 12 },   // L2: Cagayan
+  { x: 50, y: 20 },   // L3: CAR
+  { x: 45, y: 28 },   // L4: Central Luzon
+  { x: 52, y: 35 },   // L5: NCR
+  { x: 60, y: 42 },   // L6: CALABARZON
+  { x: 40, y: 50 },   // L7: MIMAROPA
+  { x: 70, y: 55 },   // L8: Bicol
+  { x: 45, y: 65 },   // L9: Western Visayas
+  { x: 55, y: 72 },   // L10: Central Visayas
+  { x: 75, y: 78 },   // L11: Eastern Visayas
+  { x: 30, y: 90 },   // L12: Zamboanga
+  { x: 55, y: 95 },   // L13: Northern Mindanao
+  { x: 75, y: 102 },  // L14: Davao
+  { x: 60, y: 112 },  // L15: SOCCSKSARGEN
+  { x: 80, y: 120 },  // L16: Caraga
+  { x: 40, y: 130 },  // L17: BARMM
+];
+
 const Dashboard = ({ progress, onStartLesson, settings }: { progress: UserProgress, onStartLesson: (l: Lesson) => void, settings: any }) => {
   const t = getTranslation(settings.language as Language);
   const currentChapter = LESSONS.find(l => !progress.completedLessons.includes(l.id)) || LESSONS[0];
@@ -148,79 +173,375 @@ const Dashboard = ({ progress, onStartLesson, settings }: { progress: UserProgre
 
   return (
     <div className="flex-1 h-full flex flex-col min-w-0">
-      <header className="p-6 md:p-8 bg-primary-brand text-white flex flex-col gap-1 -mx-6 md:-mx-12 -mt-6 md:-mt-12 mb-8 shadow-lg">
+      <header className="p-6 bg-primary-brand text-white flex flex-col gap-1 -mx-6 -mt-6 mb-8 shadow-lg z-10">
         <div className="flex justify-between items-center max-w-4xl mx-auto w-full">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-80">{settings.language === 'en' ? 'Chapter' : 'Antas'} {chapterIdx + 1}</h2>
-            <h3 className="text-2xl font-black uppercase tracking-tight">{(t as any)[currentChapter.id] || currentChapter.title}</h3>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">
+              {settings.language === 'en' ? 'ISLAND' : 'ISLA'} {chapterIdx + 1}
+            </h2>
+            <h3 className="text-xl font-black uppercase tracking-tight">
+              {(t as any)[currentChapter.id] || currentChapter.title}
+            </h3>
           </div>
-          <button 
-            onClick={() => {
-              onStartLesson(currentChapter);
-            }}
-            className="vibrant-button text-xs px-4"
-          >
-            {t.startLesson}
-          </button>
+          <p className="text-[10px] font-black opacity-50 uppercase tracking-widest px-3 py-1 border border-white/20 rounded-full">
+            {progress.completedLessons.length} / {LESSONS.length}
+          </p>
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col items-center py-6 relative overflow-y-auto">
-        <div className="relative flex flex-col items-center gap-10 w-full max-w-md">
-          {LESSONS.map((lesson, idx) => {
-            const isCompleted = progress.completedLessons.includes(lesson.id);
-            const isNext = !isCompleted && (idx === 0 || progress.completedLessons.includes(LESSONS[idx - 1].id));
-            const isLocked = !isCompleted && !isNext;
-            const mainChar = REFINED_BAYBAYIN.find(c => c.id === (lesson.characters?.[0] || 'ka'))?.char || 'ᜀ';
+      {/* Candy Crush Style Map container */}
+      <div className="flex-1 relative overflow-auto pb-64 no-scrollbar">
+        <div className="w-full min-h-[1600px] bg-paper-bg relative flex flex-col items-center">
+          
+          {/* Representative PH Map Silhouette */}
+          <div className="absolute top-10 w-full max-w-[600px] aspect-[1/2.5] opacity-[0.03] pointer-events-none">
+            <svg viewBox="0 0 100 150" className="w-full h-full fill-primary-brand">
+              <path d={PHILIPPINE_MAP_PATH} />
+            </svg>
+          </div>
 
-            // More gentle alternating curve positions
-            const offset = idx % 2 === 0 ? (idx % 4 === 0 ? 'ml-0' : 'mr-20') : (idx % 3 === 0 ? 'ml-20' : 'ml-10');
+          <div className="relative w-full max-w-[500px] h-[1500px]">
+            {/* Draw the connecting path */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 1500">
+              <path
+                d={`M ${MAP_POINTS[0].x * 5} ${MAP_POINTS[0].y * 10} 
+                   ${MAP_POINTS.slice(1).map(p => `L ${p.x * 5} ${p.y * 10}`).join(' ')}`}
+                fill="none"
+                stroke="currentColor"
+                className="text-primary-brand/10"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray="16 16"
+              />
+            </svg>
 
-            return (
-              <div key={lesson.id} className={`group relative ${offset} transition-all`}>
+            {LESSONS.map((lesson, idx) => {
+              const isCompleted = progress.completedLessons.includes(lesson.id);
+              const isNext = !isCompleted && (idx === 0 || progress.completedLessons.includes(LESSONS[idx - 1].id));
+              const isLocked = !isCompleted && !isNext;
+              const point = MAP_POINTS[idx];
+              const mainChar = REFINED_BAYBAYIN.find(c => c.id === (lesson.characters?.[0] || 'ka'))?.char || 'ᜀ';
+
+              return (
                 <div 
-                  onClick={() => {
-                    if (!isLocked) {
-                      onStartLesson(lesson);
-                    }
+                  key={lesson.id}
+                  style={{ 
+                    position: 'absolute',
+                    left: `${point.x}%`,
+                    top: `${point.y * 10}px`,
+                    transform: 'translate(-50%, -50%)' 
                   }}
-                  className={`baybayin-char-circle cursor-pointer w-20 h-20 text-2xl ${
-                    isCompleted ? 'bg-accent-gold border-accent-gold-dark' : 
-                    isNext ? 'bg-accent-green border-[#1F613C] animate-pulse ring-4 ring-accent-green/20 scale-105' : 
-                    'bg-gray-200 border-gray-300'
-                  }`}
+                  className="z-20"
                 >
-                  <span className={isLocked ? 'text-gray-400' : 'text-white'}>{mainChar}</span>
-                </div>
-                
-                <div className={`absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-lg border-2 text-[9px] font-bold shadow-sm ${
-                   isCompleted ? 'bg-white border-parchment text-primary-brand' :
-                   isNext ? 'bg-white border-accent-green text-accent-green shadow-lg' :
-                   'bg-gray-50 border-gray-100 text-gray-300'
-                }`}>
-                  {isCompleted ? t.completed : isNext ? (settings.language === 'en' ? 'CURRENT' : 'KASALUKUYAN') : t.locked}
-                </div>
+                  <motion.div
+                    whileHover={!isLocked ? { scale: 1.1 } : {}}
+                    whileTap={!isLocked ? { scale: 0.9 } : {}}
+                    onClick={() => {
+                      if (!isLocked) {
+                        onStartLesson(lesson);
+                      }
+                    }}
+                    className={`relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer transition-all shadow-[0_8px_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-[4px] border-4 ${
+                      isCompleted ? 'bg-accent-gold border-accent-gold-dark text-white' : 
+                      isNext ? 'bg-white border-primary-brand ring-4 ring-primary-brand/5' : 
+                      'bg-gray-100 border-gray-200 grayscale opacity-40'
+                    }`}
+                  >
+                    <span className={`text-2xl font-black ${isLocked ? 'text-gray-300' : isCompleted ? 'text-white' : 'text-primary-brand'}`}>
+                      {mainChar}
+                    </span>
 
-                {isNext && (
-                   <div className="absolute top-22 left-1/2 -translate-x-1/2 bg-white shadow-xl px-3 py-1.5 rounded-xl border-2 border-accent-green min-w-[120px] text-center z-10">
-                     <p className="text-xs font-black text-accent-green uppercase">{(t as any)[lesson.id] || lesson.title}</p>
-                   </div>
-                )}
-              </div>
-            );
-          })}
+                    {isNext && (
+                      <motion.div
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white px-3 py-1 rounded-full shadow-lg border-2 border-primary-brand flex items-center gap-1"
+                      >
+                        <span className="text-[10px] font-black text-primary-brand uppercase whitespace-nowrap">START</span>
+                        <div className="w-2 h-2 bg-primary-brand rounded-full animate-pulse" />
+                      </motion.div>
+                    )}
+
+                    {/* Label */}
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                       <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isLocked ? 'text-gray-200' : 'text-primary-dark'}`}>
+                         {isLocked ? '' : (t as any)[lesson.id] || lesson.title}
+                       </p>
+                    </div>
+                  </motion.div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-
-        <div className="absolute inset-x-0 bottom-0 h-48 opacity-5 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #8B4513 0, #8B4513 2px, transparent 0, transparent 50%)', backgroundSize: '20px 20px' }}></div>
       </div>
     </div>
   );
 };
 
-
-const LessonView = ({ lesson, onComplete, onCancel, settings }: { lesson: Lesson, onComplete: (points: number) => void, onCancel: () => void, settings: any }) => {
+const CompletionSummary = ({ pointsEarned, totalPoints, onFinish, settings }: { pointsEarned: number, totalPoints: number, onFinish: () => void, settings: any }) => {
   const t = getTranslation(settings.language as Language);
+  const [displayXP, setDisplayXP] = useState(totalPoints - pointsEarned);
+
+  useEffect(() => {
+    // Animate XP increase
+    const duration = 1500;
+    const startXP = totalPoints - pointsEarned;
+    const startTime = performance.now();
+
+    const updateXP = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOutQuad = (t: number) => t * (2 - t);
+      
+      const currentXP = Math.floor(startXP + (pointsEarned * easeOutQuad(progress)));
+      setDisplayXP(currentXP);
+
+      if (progress < 1) {
+        requestAnimationFrame(updateXP);
+      } else {
+        setDisplayXP(totalPoints);
+      }
+    };
+
+    requestAnimationFrame(updateXP);
+  }, [pointsEarned, totalPoints]);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="fixed inset-0 bg-paper-bg z-[60] flex flex-col items-center justify-center p-8 overflow-y-auto"
+    >
+      <div className="max-w-md w-full space-y-10 text-center">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="relative"
+        >
+          <div className="w-40 h-40 bg-accent-gold rounded-[48px] shadow-2xl mx-auto flex items-center justify-center border-8 border-white">
+            <TrophyIcon className="w-20 h-20 text-white" />
+          </div>
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1], rotate: 360 }}
+            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 bg-accent-gold/20 blur-3xl rounded-full -z-10"
+          />
+        </motion.div>
+
+        <div className="space-y-4">
+          <motion.h2 
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-5xl font-black uppercase text-primary-dark tracking-tighter"
+          >
+            {settings.language === 'fil' ? 'MAGALING!' : 'EXCELLENT!'}
+          </motion.h2>
+          <motion.p 
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-gray-500 font-serif italic text-lg"
+          >
+            {settings.language === 'fil' ? 'Ang iyong dunong ay lumalago!' : 'Your wisdom is expanding!'}
+          </motion.p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <motion.div 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="vibrant-card py-6 border-b-4 border-parchment"
+          >
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Star className="w-4 h-4 text-accent-gold fill-accent-gold" />
+              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">XP Points</p>
+            </div>
+            <p className="text-4xl font-black text-primary-brand">+{pointsEarned}</p>
+          </motion.div>
+          
+          <motion.div 
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="bg-primary-brand rounded-3xl py-6 border-b-4 border-primary-dark shadow-xl"
+          >
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <TrophyIcon className="w-4 h-4 text-white/50" />
+              <p className="text-[10px] font-black uppercase text-white/50 tracking-widest">
+                Lvl {Math.floor(totalPoints / 100) + 1}
+              </p>
+            </div>
+            <p className="text-4xl font-black text-white tabular-nums">{displayXP}</p>
+          </motion.div>
+        </div>
+
+        <motion.div
+           initial={{ y: 20, opacity: 0 }}
+           animate={{ y: 0, opacity: 1 }}
+           transition={{ delay: 0.8 }}
+        >
+          <button 
+            onClick={onFinish}
+            className="vibrant-button w-full py-5 text-xl flex items-center justify-center gap-3"
+          >
+            {t.continue}
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </motion.div>
+      </div>
+
+      {/* Background elements */}
+      {[...Array(8)].map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ 
+            opacity: [0, 1, 0], 
+            scale: [0, 1.5, 0],
+            x: (Math.random() - 0.5) * 400,
+            y: (Math.random() - 0.5) * 600
+          }}
+          transition={{ 
+            duration: 2 + Math.random() * 2, 
+            repeat: Infinity,
+            delay: i * 0.5
+          }}
+          className="absolute w-2 h-2 rounded-full bg-accent-gold pointer-events-none"
+        />
+      ))}
+    </motion.div>
+  );
+};
+
+const TracingCanvas = ({ char, settings, onComplete }: { char: string, settings: any, onComplete: () => void }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasDrawn, setHasDrawn] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas resolution for crisp lines
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = '#D4AF37'; // accent-gold
+  }, []);
+
+  const getPos = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    
+    let clientX, clientY;
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = (e as MouseEvent | React.MouseEvent).clientX;
+      clientY = (e as MouseEvent | React.MouseEvent).clientY;
+    }
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsDrawing(true);
+    setHasDrawn(true);
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      const { x, y } = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      const { x, y } = getPos(e);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    onComplete();
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setHasDrawn(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-6 w-full max-w-sm mx-auto">
+      <div className="relative w-full aspect-square bg-white rounded-3xl border-4 border-parchment shadow-inner overflow-hidden cursor-crosshair">
+        {/* Guide Character */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <span className="text-[200px] text-gray-100 font-normal leading-none opacity-50">
+            {char}
+          </span>
+        </div>
+        
+        <canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+          className="absolute inset-0 w-full h-full z-10 touch-none"
+        />
+      </div>
+
+      <div className="flex gap-3 w-full">
+        <button 
+          onClick={clearCanvas}
+          className="flex-1 py-1 px-4 text-[10px] font-black uppercase text-gray-400 border border-gray-200 rounded-full hover:bg-gray-50 uppercase tracking-widest"
+        >
+          {settings.language === 'fil' ? 'ULITIN' : 'CLEAR'}
+        </button>
+      </div>
+
+      <p className="text-sm font-serif italic text-primary-dark/40 text-center">
+        {settings.language === 'fil' ? 'Subukang isulat ang karakter gamit ang iyong daliri o mouse.' : 'Try writing the character using your finger or mouse.'}
+      </p>
+    </div>
+  );
+};
+
+const LessonView = ({ lesson, onComplete, onCancel, settings, currentPoints }: { lesson: Lesson, onComplete: (points: number) => void, onCancel: () => void, settings: any, currentPoints: number }) => {
+  const t = getTranslation(settings.language as Language);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [step, setStep] = useState(0);
+  const [showTracing, setShowTracing] = useState(false);
+  const [tracingComplete, setTracingComplete] = useState(false);
   const [selectedChars] = useState(() => {
     return lesson.characters?.map(cid => REFINED_BAYBAYIN.find(c => c.id === cid)!) || [];
   });
@@ -246,10 +567,17 @@ const LessonView = ({ lesson, onComplete, onCancel, settings }: { lesson: Lesson
 
   const handleNext = () => {
     if (lesson.type === 'intro') {
-      if (step < selectedChars.length - 1) {
-        setStep(step + 1);
+      if (!showTracing) {
+        setShowTracing(true);
+        setTracingComplete(false);
       } else {
-        onComplete(lesson.points);
+        if (step < selectedChars.length - 1) {
+          setStep(step + 1);
+          setShowTracing(false);
+          setTracingComplete(false);
+        } else {
+          setIsFinishing(true);
+        }
       }
     } else {
       if (quizState.currentQuestion < questions.length - 1) {
@@ -261,10 +589,21 @@ const LessonView = ({ lesson, onComplete, onCancel, settings }: { lesson: Lesson
           showExplanation: false,
         });
       } else {
-        onComplete(lesson.points);
+        setIsFinishing(true);
       }
     }
   };
+
+  if (isFinishing) {
+    return (
+      <CompletionSummary 
+        pointsEarned={lesson.points} 
+        totalPoints={currentPoints + lesson.points} 
+        settings={settings}
+        onFinish={() => onComplete(lesson.points)}
+      />
+    );
+  }
 
   const handleCheckAnswer = (option: string) => {
     if (quizState.selectedAnswer) return;
@@ -296,15 +635,32 @@ const LessonView = ({ lesson, onComplete, onCancel, settings }: { lesson: Lesson
         >
           {lesson.type === 'intro' ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
-              <span className="text-8xl bg-white w-40 h-40 flex items-center justify-center rounded-[40px] border-4 border-parchment shadow-xl text-primary-dark">
-                {selectedChars[step].char}
-              </span>
-              <div className="space-y-4">
-                <h2 className="text-7xl font-black text-primary-brand">{selectedChars[step].latin}</h2>
-                <p className="text-xl text-primary-dark/60 font-serif italic max-w-sm mx-auto">
-                  {selectedChars[step].description}
-                </p>
-              </div>
+              {showTracing ? (
+                <div className="space-y-6 w-full">
+                  <div className="flex items-center justify-center gap-4">
+                    <span className="text-4xl text-primary-brand font-black">{selectedChars[step].latin}</span>
+                    <div className="h-0.5 w-12 bg-parchment" />
+                    <span className="text-4xl text-primary-dark">{selectedChars[step].char}</span>
+                  </div>
+                  <TracingCanvas 
+                    char={selectedChars[step].char} 
+                    settings={settings}
+                    onComplete={() => setTracingComplete(true)} 
+                  />
+                </div>
+              ) : (
+                <>
+                  <span className="text-8xl bg-white w-40 h-40 flex items-center justify-center rounded-[40px] border-4 border-parchment shadow-xl text-primary-dark">
+                    {selectedChars[step].char}
+                  </span>
+                  <div className="space-y-4">
+                    <h2 className="text-7xl font-black text-primary-brand">{selectedChars[step].latin}</h2>
+                    <p className="text-xl text-primary-dark/60 font-serif italic max-w-sm mx-auto">
+                      {selectedChars[step].description}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="flex-1 flex flex-col space-y-6">
@@ -348,9 +704,9 @@ const LessonView = ({ lesson, onComplete, onCancel, settings }: { lesson: Lesson
 
         <div className="mt-12 py-8 flex justify-end">
           <button 
-            disabled={lesson.type === 'quiz' && quizState.selectedAnswer === null}
+            disabled={(lesson.type === 'quiz' && quizState.selectedAnswer === null) || (lesson.type === 'intro' && showTracing && !tracingComplete)}
             onClick={handleNext} 
-            className="vibrant-button px-16 py-4 text-xl"
+            className="vibrant-button px-16 py-4 text-xl disabled:opacity-50 disabled:grayscale transition-all"
           >
             {t.continue}
           </button>
@@ -361,45 +717,45 @@ const LessonView = ({ lesson, onComplete, onCancel, settings }: { lesson: Lesson
 };
 
 const MOCK_LEADERS = [
-  { id: 'm1', name: 'Alunsina', points: 1250, streak: 15 },
-  { id: 'm2', name: 'Bathala', points: 1100, streak: 12 },
-  { id: 'm3', name: 'Tala', points: 950, streak: 8 },
-  { id: 'm4', name: 'Mayari', points: 800, streak: 5 },
-  { id: 'm5', name: 'Apo', points: 600, streak: 3 },
+  { id: 'm1', name: 'Boss', points: 1000, streak: 30, avatar: null },
+  { id: 'm2', name: 'Sof', points: 2500, streak: 25, avatar: null },
+  { id: 'm3', name: 'Samaire', points: 3000, streak: 20, avatar: null },
+  { id: 'm4', name: 'Mhevly', points: 2400, streak: 15, avatar: null },
+  { id: 'm5', name: 'Anya', points: 1700, streak: 10, avatar: null },
+  { id: 'm6', name: 'Salamat', points: 800, streak: 8, avatar: null },
+  { id: 'm7', name: 'Agat', points: 600, streak: 6, avatar: null },
+  { id: 'm8', name: 'Datu', points: 400, streak: 4, avatar: null },
+  { id: 'm9', name: 'Lakan', points: 200, streak: 2, avatar: null },
+  { id: 'm10', name: 'Hara', points: 100, streak: 1, avatar: null },
 ];
 
-const Leaderboard = ({ settings }: { settings: any }) => {
+const Leaderboard = ({ settings, currentUser, currentProgress }: { settings: any, currentUser: any, currentProgress: any }) => {
   const t = getTranslation(settings.language as Language);
   const [leaders, setLeaders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('points', 'desc'), limit(10));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const liveUsers = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...(doc.data() as any)
-      }));
-
-      // Merge mock data with live data, remove duplicates if name matches (simple case)
-      const combined = [...liveUsers];
-      MOCK_LEADERS.forEach(mock => {
-        if (!combined.some(u => u.name === mock.name)) {
-          combined.push(mock);
-        }
+    const userPoints = currentProgress?.points || 0;
+    
+    let combined: any[] = [...MOCK_LEADERS];
+    
+    if (currentUser) {
+      combined.push({
+        id: 'current',
+        name: currentUser.name,
+        points: userPoints,
+        streak: currentProgress?.streak || 1,
+        avatar: currentUser.avatar || null,
+        isMe: true
       });
+    }
 
-      // Sort and take top 10
-      const sorted = combined.sort((a, b) => b.points - a.points).slice(0, 10);
-      setLeaders(sorted);
-      setLoading(false);
-    }, (error) => {
-      console.error("Leaderboard Error:", error);
-      setLoading(false);
-    });
+    const displayList = combined
+      .filter(u => u.points > userPoints || u.id === 'current')
+      .sort((a, b) => b.points - a.points);
 
-    return () => unsubscribe();
-  }, []);
+    setLeaders(displayList.slice(0, 10));
+  }, [currentUser, currentProgress]);
 
   return (
     <div className="space-y-6">
@@ -408,17 +764,26 @@ const Leaderboard = ({ settings }: { settings: any }) => {
       {loading ? (
         <div className="vibrant-card p-12 text-center">
           <div className="w-10 h-10 border-4 border-accent-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-primary-dark font-serif italic">Kinukuha ang mga bayani...</p>
+          <p className="text-primary-dark font-serif italic text-sm">Masusing sinusuri ang mga talaan...</p>
+        </div>
+      ) : leaders.length === 0 ? (
+        <div className="vibrant-card p-12 text-center opacity-60">
+          <p className="font-serif italic">Wala pang nakatalang bayani.</p>
         </div>
       ) : (
         <div className="vibrant-card p-0 overflow-hidden shadow-sm">
           {leaders.map((user, i) => (
-            <div key={user.id} className={`flex items-center justify-between p-4 border-b border-parchment/30 last:border-0 ${i === 0 ? 'bg-accent-gold/5' : ''}`}>
+            <div 
+              key={user.id || user.name} 
+              className={`flex items-center justify-between p-4 border-b border-parchment/30 last:border-0 ${
+                user.name === currentUser?.name ? 'bg-accent-gold/10' : i === 0 ? 'bg-accent-gold/5' : ''
+              }`}
+            >
               <div className="flex items-center gap-4">
                 <span className={`text-2xl font-black w-6 text-center ${i < 3 ? 'text-accent-gold' : 'text-gray-300'}`}>
                   {i + 1}
                 </span>
-                <div className="w-10 h-10 rounded-full bg-parchment/40 flex items-center justify-center font-black text-primary-brand text-xs overflow-hidden">
+                <div className="w-10 h-10 rounded-full bg-parchment/40 flex items-center justify-center font-black text-primary-brand text-xs overflow-hidden border-2 border-white shadow-sm">
                   {user.avatar ? (
                     <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
@@ -426,9 +791,16 @@ const Leaderboard = ({ settings }: { settings: any }) => {
                   )}
                 </div>
                 <div>
-                  <p className="text-lg font-black text-primary-dark uppercase tracking-tight leading-none">{user.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-black text-primary-dark uppercase tracking-tight leading-none">
+                      {user.name}
+                    </p>
+                    {user.name === currentUser?.name && (
+                      <span className="bg-primary-brand text-white text-[7px] px-1 rounded-sm font-black uppercase tracking-tighter">IKAW</span>
+                    )}
+                  </div>
                   <div className="flex gap-2 mt-1">
-                    <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">
+                    <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-none">
                       🔥 {user.streak || 1} {settings.language === 'fil' ? 'ARW' : 'DAY'}
                     </span>
                   </div>
@@ -436,7 +808,7 @@ const Leaderboard = ({ settings }: { settings: any }) => {
               </div>
               <div className="text-right">
                 <p className="text-xl font-black text-primary-brand leading-none">{user.points}</p>
-                <p className="text-[9px] font-black uppercase text-gray-400 mt-1">{t.score}</p>
+                <p className="text-[9px] font-black uppercase text-gray-400 mt-0.5">{t.score}</p>
               </div>
             </div>
           ))}
@@ -944,7 +1316,7 @@ export default function App() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                 >
-                  <Leaderboard settings={settings} />
+                  <Leaderboard settings={settings} currentUser={user} currentProgress={progress} />
                 </motion.div>
               )}
 
@@ -1035,6 +1407,7 @@ export default function App() {
               onComplete={handleCompleteLesson} 
               onCancel={() => setActiveLesson(null)} 
               settings={settings}
+              currentPoints={progress.points}
             />
           )}
         </AnimatePresence>

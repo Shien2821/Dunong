@@ -53,16 +53,23 @@ export interface Lesson {
 }
 
 export const LESSONS: Lesson[] = [
-  { id: 'l1', title: 'The Three Vowels', type: 'intro', characters: ['a', 'ei', 'ou'], points: 50 },
-  { id: 'l2', title: 'Vowel Basics Quiz', type: 'quiz', characters: ['a', 'ei', 'ou'], points: 100 },
-  { id: 'l3', title: 'The Throat Sounds', type: 'intro', characters: ['ka', 'ga', 'nga'], points: 50 },
-  { id: 'l4', title: 'Consonants Part 1 Quiz', type: 'quiz', characters: ['ka', 'ga', 'nga'], points: 100 },
-  { id: 'l5', title: 'Soft Sounds', type: 'intro', characters: ['ta', 'da', 'na'], points: 50 },
-  { id: 'l6', title: 'Consonants Part 2 Quiz', type: 'quiz', characters: ['ta', 'da', 'na'], points: 150 },
-  { id: 'l7', title: 'The Lip Sounds', type: 'intro', characters: ['pa', 'ba', 'ma'], points: 50 },
-  { id: 'l8', title: 'Semi-Vowels & Flow', type: 'intro', characters: ['ya', 'la', 'wa'], points: 50 },
-  { id: 'l9', title: 'The Sissing Sounds', type: 'intro', characters: ['sa', 'ha'], points: 50 },
-  { id: 'l10', title: 'Grand Mastery Test', type: 'quiz', characters: ['a', 'ei', 'ou', 'ka', 'ga', 'nga', 'ta', 'da', 'na', 'pa', 'ba', 'ma', 'ya', 'la', 'wa', 'sa', 'ha'], points: 500 },
+  { id: 'l1', title: 'Ilocos: The Three Vowels', type: 'intro', characters: ['a', 'ei', 'ou'], points: 50 },
+  { id: 'l2', title: 'Cagayan: Vowel Basics', type: 'quiz', characters: ['a', 'ei', 'ou'], points: 100 },
+  { id: 'l3', title: 'CAR: Throat Sounds', type: 'intro', characters: ['ka', 'ga', 'nga'], points: 50 },
+  { id: 'l4', title: 'Central Luzon: Hard Sounds', type: 'intro', characters: ['ta', 'da', 'na'], points: 50 },
+  { id: 'l5', title: 'NCR: City Quiz', type: 'quiz', characters: ['ka', 'ga', 'nga', 'ta', 'da', 'na'], points: 150 },
+  { id: 'l6', title: 'CALABARZON: Lip Sounds', type: 'intro', characters: ['pa', 'ba', 'ma'], points: 50 },
+  { id: 'l7', title: 'MIMAROPA: Semi-Vowels', type: 'intro', characters: ['ya', 'la', 'wa'], points: 50 },
+  { id: 'l8', title: 'Bicol: Fire Sounds', type: 'intro', characters: ['sa', 'ha'], points: 50 },
+  { id: 'l9', title: 'Western Visayas: Island Quiz', type: 'quiz', characters: ['pa', 'ba', 'ma', 'ya', 'la', 'wa', 'sa', 'ha'], points: 200 },
+  { id: 'l10', title: 'Central Visayas: The Kudlit', type: 'intro', characters: ['ka', 'ta', 'pa'], points: 50 },
+  { id: 'l11', title: 'Eastern Visayas: Waray Words', type: 'intro', characters: ['da', 'la', 'ha'], points: 50 },
+  { id: 'l12', title: 'Zamboanga: Chavacano Quiz', type: 'quiz', characters: ['ba', 'ma', 'wa'], points: 200 },
+  { id: 'l13', title: 'Northern Mindanao: Mountain Sounds', type: 'intro', characters: ['ga', 'na', 'sa'], points: 50 },
+  { id: 'l14', title: 'Davao: Southern Mastery', type: 'intro', characters: ['ta', 'na', 'ma'], points: 50 },
+  { id: 'l15', title: 'SOCCSKSARGEN: Unity Quiz', type: 'quiz', characters: ['ka', 'ga', 'nga', 'pa', 'ba', 'ma'], points: 250 },
+  { id: 'l16', title: 'Caraga: Ancient Scripts', type: 'intro', characters: ['a', 'ei', 'ou', 'ka', 'ga', 'nga'], points: 50 },
+  { id: 'l17', title: 'BARMM: Ultimate Bayani', type: 'quiz', characters: ['a', 'ei', 'ou', 'ka', 'ga', 'nga', 'ta', 'da', 'na', 'pa', 'ba', 'ma', 'ya', 'la', 'wa', 'sa', 'ha'], points: 600 },
 ];
 
 export const COLORS = {
